@@ -1,0 +1,21 @@
+{
+    "name": "EasyCS.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:20c16ccffba0b814882cf7795cc8c9a2",
+        "GUID:1634e2f65b6fec944a55a0035af563f2",
+        "GUID:e851236b9ac2b9b4eaaa99506366edea",
+        "GUID:324caed91501a9c47a04ebfd87b68794"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
