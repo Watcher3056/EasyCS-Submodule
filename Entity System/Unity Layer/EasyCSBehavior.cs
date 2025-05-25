@@ -105,6 +105,7 @@ namespace EasyCS
             InternalOnDisable();
         }
 
+#if UNITY_EDITOR
         protected virtual void OnValidate()
         {
             ValidateSetup();
@@ -253,6 +254,8 @@ namespace EasyCS
 
             Debug.Log($"[EasyCS] Components sorted on {gameObject.name}.");
         }
+
+#endif
 
         /// <summary>
         /// DO NOT override unless you know what you are doing
