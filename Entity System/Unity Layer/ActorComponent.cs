@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace EasyCS
 {
+    [HideMonoScript]
     public class ActorComponent : EasyCSBehavior, IEventListener<EventEntityKilled>
     {
         [SerializeField, ReadOnly, Required, ShowIf("EditorShowActor")]
