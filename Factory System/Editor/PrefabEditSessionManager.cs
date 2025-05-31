@@ -122,6 +122,8 @@ namespace EasyCS.EntityFactorySystem.Editor
                 entityData.ChildEntities.Add(childEntityData);
             }
 
+            entityData.Template = transform.GetComponent<Actor>().EntityTemplate;
+
             return entityData;
         }
     }

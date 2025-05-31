@@ -23,6 +23,7 @@ namespace EasyCS.EntityFactorySystem
 
             [ListDrawerSettings(AlwaysExpanded = true), OnValueChanged("EditorValidate")]
             public List<ComponentData> Components = new List<ComponentData>();
+            public EntityTemplateAsset Template;
             [Required]
             public List<EntityFactory> NestedFactories = new List<EntityFactory>();
 

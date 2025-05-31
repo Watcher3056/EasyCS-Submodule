@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using TriInspector;
-using UnityEditor;
 using UnityEngine;
 
 namespace EasyCS
@@ -84,6 +83,9 @@ namespace EasyCS
         private Dictionary<Type, ActorComponent> _actorComponents = new Dictionary<Type, ActorComponent>();
         private readonly Dictionary<Type, object> _actorComponentsAndData = new();
 
+        [field: SerializeField]
+        public EntityTemplateAsset EntityTemplate { get; private set; }
+
         [SerializeField, ReadOnly]
         private List<ActorComponent> _allComponents = new List<ActorComponent>();
 
@@ -96,7 +98,8 @@ namespace EasyCS
         [ShowInInspector, ReadOnly, ShowIf("EditorHasMissingEntityComponentsDependencies"),
             LabelText("Missing Entity Dependencies"),
          ListDrawerSettings(AlwaysExpanded = true),
-         InfoBox("Entity Dependencies is not resolved! Default instances will be created.", TriMessageType.Warning, "EditorHasMissingEntityComponentsDependencies")]
+         InfoBox("Entity Dependencies is not resolved! Default instances will be created.", TriMessageType.Warning, "EditorHasMissingEntityComponentsDependencies"),
+            MaxDrawDepth(2)]
         private List<IEntityComponent> EditorEntityComponentsMissingRequired
         {
             get
@@ -566,6 +569,7 @@ namespace EasyCS
             foreach (var component in _allComponents)
                 component.SetActor(this);
 
+            EditorApplyEntityTemplate();
             EditorValidateAllComponentDependencies();
             ValidateSetup();
             EditorUpdateUnusedDependencies();
@@ -683,6 +687,45 @@ namespace EasyCS
         private void EditorValidateActorComponentsDependencies()
         {
             EditorUpdateMissingActorDependenciesList();
+        }
+
+        private void EditorApplyEntityTemplate()
+        {
+            if (EntityTemplate == null)
+                return;
+
+            var componentTypes = EntityTemplate.GetComponentTypes();
+
+            List<Type> providersToAdd = new List<Type>();
+
+            foreach (var type in componentTypes)
+            {
+                Type providerType = EntityComponentProviderFinder.FindEntityComponentProviderMatching(type);
+
+                if (providerType != null)
+                {
+                    if (_allComponents.Exists(c => c.GetType() == providerType))
+                        continue;
+                    if (_entityComponentsMissing.Exists(c => c.GetType() == type))
+                        continue;
+
+                    providersToAdd.Add(providerType);
+                }
+            }
+
+            if (providersToAdd.Count > 0)
+            {
+                UnityEditor.EditorApplication.delayCall += () =>
+                {
+                    if (this == null) return;
+
+                    foreach (var provider in providersToAdd)
+                        if (gameObject.GetComponent(provider) == null)
+                            UnityEditor.Undo.AddComponent(gameObject, provider);
+
+                    UnityEditor.EditorUtility.SetDirty(gameObject);
+                };
+            }
         }
 
         public List<string> EditorGetMissingDependenciesNamesForAllComponents(EditorDependenciesType dependenciesType)
@@ -833,6 +876,12 @@ namespace EasyCS
         }
 
         public bool EditorHasUnusedDependencies() => _editorUnusedDependencies.Count > 0;
+
+        public void EditorSetEntityTemplate(EntityTemplateAsset entityTemplateAsset)
+        {
+            EntityTemplate = entityTemplateAsset;
+            EditorApplyEntityTemplate();
+        }
 #endif
     }
 }
