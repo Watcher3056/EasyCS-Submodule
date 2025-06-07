@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace EasyCS
 {
+    [IconClass(ConstantsIcons.IconActor)]
     public abstract class ActorDataSharedProviderBase<T1, T2> : ActorComponent, IActorDataProvider
         where T1 : IActorData
         where T2 : IActorDataFactory

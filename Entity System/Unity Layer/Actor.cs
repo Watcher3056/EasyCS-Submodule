@@ -8,6 +8,7 @@ namespace EasyCS
 {
     [DisallowMultipleComponent]
     [SelectionBase]
+    [IconClass(ConstantsIcons.IconActor)]
     public class Actor : EasyCSBehavior, IHasEntity
     {
         public enum EntityComponentSetupPolicy
@@ -17,7 +18,6 @@ namespace EasyCS
             OverrideFromActor,
             SetAsInActor
         }
-
         [SerializeField, ReadOnly]
         private EntityProvider _entityProvider;
 

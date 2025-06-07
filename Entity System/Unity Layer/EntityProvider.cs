@@ -6,6 +6,7 @@ using UnityEngine;
 namespace EasyCS
 {
     [DeclareHorizontalGroup("Buttons")]
+    [IconClass(ConstantsIcons.IconEntity)]
     public class EntityProvider : EasyCSBehavior, IHasEntity
     {
         public enum Source

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using TriInspector;
-using UnityEditor;
 using UnityEngine;
 
 namespace EasyCS
@@ -13,6 +12,7 @@ namespace EasyCS
     }
 
     [DeclareHorizontalGroup("Buttons")]
+    [IconClass(ConstantsIcons.IconEntity)]
     public abstract class EntityDataProvider<TFactory, TComponent> : ActorComponent, IEntityDataProvider
         where TFactory : ScriptableObject, IEntityDataFactory
         where TComponent : IEntityData
@@ -81,19 +81,19 @@ namespace EasyCS
         public void EditorSetFactory(IEntityDataFactory factory)
         {
             _factory = (TFactory)factory;
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         public void EditorSetData(IEntityData component)
         {
             _component = (TComponent)component;
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         public void EditorSetSource(Source source)
         {
             _source = source;
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         [Button, ShowIf("EditorShowConvertToAssetButton"), Group("Buttons"), HideInPlayMode]
@@ -111,7 +111,7 @@ namespace EasyCS
         [Button, ShowIf("EditorShowConvertToAssetButton"), Group("Buttons"), HideInPlayMode]
         private void ConvertToAssetAs()
         {
-            string path = EditorUtility.SaveFilePanelInProject(
+            string path = UnityEditor.EditorUtility.SaveFilePanelInProject(
                 "Export EntityData Factory",
                 $"{typeof(TComponent).Name}Factory_{name}",
                 "asset",
@@ -137,16 +137,16 @@ namespace EasyCS
                 }
             }
 
-            AssetDatabase.CreateAsset(factory, path);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
+            UnityEditor.AssetDatabase.CreateAsset(factory, path);
+            UnityEditor.AssetDatabase.SaveAssets();
+            UnityEditor.AssetDatabase.Refresh();
 
             Debug.Log($"EntityDataFactory asset saved to: {path}");
 
             _source = Source.Asset;
             _factory = factory;
 
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         public IEntityDataFactory EditorGetFactory() => _factory;

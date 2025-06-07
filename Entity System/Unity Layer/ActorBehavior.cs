@@ -1,5 +1,9 @@
+using TriInspector;
+using UnityEngine;
+
 namespace EasyCS
 {
+    [IconClass(ConstantsIcons.IconActor)]
     public abstract class ActorBehavior : ActorComponent
     {
         //protected override void OnGUI()

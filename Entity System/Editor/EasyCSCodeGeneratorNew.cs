@@ -7,7 +7,6 @@ using UnityEditor;
 using UnityEngine;
 using System.Text.RegularExpressions;
 
-
 namespace EasyCS.Editor
 {
     public static class EasyCSCodeGeneratorReflection
@@ -21,7 +20,6 @@ namespace EasyCS.Editor
         public const string EntityBehaviorProvidersFolder = GeneratedRootFolder + "/Entity Behavior Providers";
         public const string EntityDataFactoriesFolder = GeneratedRootFolder + "/Entity Data Factories";
         public const string ActorDataSharedFactoriesFolder = GeneratedRootFolder + "/Actor Data Shared Factories";
-        // List of all new subfolders for easier iteration
         private static readonly string[] NewGeneratedSubfolders = {
             EntityDataProvidersFolder,
             ActorDataSharedProvidersFolder,
@@ -30,7 +28,7 @@ namespace EasyCS.Editor
             ActorDataSharedFactoriesFolder
         };
 
-        // Old generated folders that need cleanup (though current logic handles moving from anywhere)
+        // Old generated folders that need cleanup
         private const string OldEntityDataFolder = GeneratedRootFolder + "/EntityData";
         private const string OldActorDataFolder = GeneratedRootFolder + "/ActorData";
         private static readonly string[] OldGeneratedFolders = {
@@ -38,19 +36,19 @@ namespace EasyCS.Editor
             OldActorDataFolder
         };
 
-
         // Assembly Definition details
         public const string AsmdefPath = GeneratedRootFolder + "/EasyCS.Generated.asmdef";
-        private const string OldEntityDataAsmdefPath = OldEntityDataFolder + "/EntityData.Generated.asmdef"; // Path to the old asmdef
+        private const string OldEntityDataAsmdefPath = OldEntityDataFolder + "/EntityData.Generated.asmdef";
         public const string AsmdefName = "EasyCS.Generated";
 
-        // Use constants for generated file prefixes
-        public const string EntityDataPrefix = "EntityData"; // Prefix for user-defined EntityData types
-        public const string EntityBehaviorPrefix = "EntityBehavior"; // Prefix for user-defined EntityBehavior types
-        public const string ActorDataSharedPrefix = "ActorDataShared"; // Prefix for user-defined ActorDataShared types
+        // Constants for user-defined type prefixes
+        public const string EntityDataPrefix = "EntityData";
+        public const string EntityBehaviorPrefix = "EntityBehavior";
+        public const string ActorDataSharedPrefix = "ActorDataShared";
 
-        public const string FactorySuffix = "Factory"; // Suffix for generated Factory types
-        public const string ProviderSuffix = "Provider"; // Suffix for generated Provider types
+        // Constants for generated type suffixes
+        public const string FactorySuffix = "Factory";
+        public const string ProviderSuffix = "Provider";
 
         // Full generated type name prefixes
         public const string EntityDataFactoryPrefix = EntityDataPrefix + FactorySuffix;
@@ -59,7 +57,7 @@ namespace EasyCS.Editor
         public const string ActorDataSharedFactoryPrefix = ActorDataSharedPrefix + FactorySuffix;
         public const string ActorDataSharedProviderPrefix = ActorDataSharedPrefix + ProviderSuffix;
 
-        // Old ActorData Factory prefix (from original generator)
+        // Old ActorData Factory prefix (from original generator, for cleanup)
         public const string OldActorDataFactoryPrefix = "DataActorDataFactory";
 
 
@@ -68,12 +66,10 @@ namespace EasyCS.Editor
         public static void RegenerateAll()
         {
             Debug.Log("[EasyCS] Starting full regeneration (Reflection)...");
-            // Ensure folders exist and are known to Unity immediately
             EnsureGeneratedFolders();
-            // Perform generation and cleanup in a single pass
             GenerateAndCleanup();
-            HandleAsmdefGeneration(); // Call new method to conditionally generate/delete asmdef
-            AssetDatabase.Refresh(); // Final refresh
+            HandleAsmdefGeneration();
+            AssetDatabase.Refresh();
             Debug.Log("[EasyCS] Full regeneration (Reflection) complete.");
         }
 
@@ -81,12 +77,10 @@ namespace EasyCS.Editor
         public static void GenerateMissing()
         {
             Debug.Log("[EasyCS] Starting generation of missing scripts (Reflection)...");
-            // Ensure folders exist and are known to Unity immediately
             EnsureGeneratedFolders();
-            // Perform generation and cleanup in a single pass
-            GenerateAndCleanup(generateOnlyMissing: true); // Indicate to only generate missing
-            HandleAsmdefGeneration(); // Call new method to conditionally generate/delete asmdef
-            AssetDatabase.Refresh(); // Final refresh
+            GenerateAndCleanup(generateOnlyMissing: true);
+            HandleAsmdefGeneration();
+            AssetDatabase.Refresh();
             Debug.Log("[EasyCS] Generation of missing scripts (Reflection) complete.");
         }
 
@@ -94,25 +88,24 @@ namespace EasyCS.Editor
         public static void CleanupObsolete()
         {
             Debug.Log("[EasyCS] Starting cleanup of obsolete scripts (Reflection)...");
-            // Ensure folders exist and are known to Unity immediately
             EnsureGeneratedFolders();
-            // Perform cleanup only (by generating expected and deleting non-matching)
-            GenerateAndCleanup(cleanupOnly: true); // Indicate to only cleanup
-            HandleAsmdefGeneration(); // Call new method to conditionally generate/delete asmdef
-            AssetDatabase.Refresh(); // Final refresh
+            GenerateAndCleanup(cleanupOnly: true);
+            HandleAsmdefGeneration();
+            AssetDatabase.Refresh();
             Debug.Log("[EasyCS] Cleanup of obsolete scripts (Reflection) complete.");
         }
 
-
-        // --- Combined Generation and Cleanup Logic ---
-
+        /// <summary>
+        /// Orchestrates the process of generating new files, updating existing ones,
+        /// and cleaning up obsolete or misplaced generated files.
+        /// </summary>
         private static void GenerateAndCleanup(bool generateOnlyMissing = false, bool cleanupOnly = false)
         {
             Debug.Log("[EasyCS] Starting combined generation and cleanup...");
 
             // Get current valid user-defined base types using reflection
             var entityDataTypes = GetAllTypesDerivedFrom(typeof(IEntityData)).ToList();
-            var entityBehaviorTypes = GetAllTypesDerivedFrom(typeof(IEntityBehavior)).ToList(); // Corrected method call
+            var entityBehaviorTypes = GetAllTypesDerivedFrom(typeof(IEntityBehavior)).ToList();
             var actorDataSharedTypes = GetAllTypesDerivedFrom(typeof(ActorDataSharedBase)).ToList();
 
             // Filter out EntityData types marked with RuntimeOnlyAttribute
@@ -121,7 +114,7 @@ namespace EasyCS.Editor
             // Build a list of all expected generated files with their content and expected path
             var expectedFiles = new List<ExpectedGeneratedFileInfo>();
 
-            // Expected Entity Data Factories and Providers
+            // Populate expected files for Entity Data
             foreach (var entityType in entityDataTypes)
             {
                 string baseName = entityType.Name.Replace(EntityDataPrefix, "");
@@ -129,26 +122,24 @@ namespace EasyCS.Editor
                 string providerName = $"{EntityDataProviderPrefix}{baseName}";
                 string namespaceName = GetNamespaceOf(entityType) ?? "EasyCS.Generated.EntityData";
 
-                // Add Factory
                 expectedFiles.Add(new ExpectedGeneratedFileInfo
                 {
                     ExpectedPath = Path.Combine(EntityDataFactoriesFolder, factoryName + ".cs").Replace("\\", "/"),
                     ExpectedContent = GenerateEntityDataFactoryContent(factoryName, entityType.Name, namespaceName),
-                    InferredBaseName = baseName, // Store inferred base name
-                    GeneratedFilePrefix = EntityDataFactoryPrefix // Store prefix
+                    InferredBaseName = baseName,
+                    GeneratedFilePrefix = EntityDataFactoryPrefix
                 });
 
-                // Add Provider
                 expectedFiles.Add(new ExpectedGeneratedFileInfo
                 {
                     ExpectedPath = Path.Combine(EntityDataProvidersFolder, providerName + ".cs").Replace("\\", "/"),
-                    ExpectedContent = GenerateEntityDataProviderContent(providerName, factoryName, entityType.Name, namespaceName),
-                    InferredBaseName = baseName, // Store inferred base name
-                    GeneratedFilePrefix = EntityDataProviderPrefix // Store prefix
+                    ExpectedContent = GenerateEntityDataProviderContent(providerName, entityType.Name, namespaceName),
+                    InferredBaseName = baseName,
+                    GeneratedFilePrefix = EntityDataProviderPrefix
                 });
             }
 
-            // Expected Entity Behavior Providers
+            // Populate expected files for Entity Behavior
             foreach (var behaviorType in entityBehaviorTypes)
             {
                 string baseName = behaviorType.Name.Replace(EntityBehaviorPrefix, "");
@@ -159,12 +150,12 @@ namespace EasyCS.Editor
                 {
                     ExpectedPath = Path.Combine(EntityBehaviorProvidersFolder, providerName + ".cs").Replace("\\", "/"),
                     ExpectedContent = GenerateEntityBehaviorProviderContent(providerName, behaviorType.Name, namespaceName),
-                    InferredBaseName = baseName, // Store inferred base name
-                    GeneratedFilePrefix = EntityBehaviorProviderPrefix // Store prefix
+                    InferredBaseName = baseName,
+                    GeneratedFilePrefix = EntityBehaviorProviderPrefix
                 });
             }
 
-            // Expected Actor Data Shared Factories and Providers
+            // Populate expected files for Actor Data Shared
             foreach (var actorDataType in actorDataSharedTypes)
             {
                 string baseName = actorDataType.Name.Replace(ActorDataSharedPrefix, "");
@@ -172,29 +163,26 @@ namespace EasyCS.Editor
                 string providerName = $"{ActorDataSharedProviderPrefix}{baseName}";
                 string namespaceName = GetNamespaceOf(actorDataType) ?? "EasyCS.Generated.ActorDataShared";
 
-                // Add Factory
                 expectedFiles.Add(new ExpectedGeneratedFileInfo
                 {
                     ExpectedPath = Path.Combine(ActorDataSharedFactoriesFolder, factoryName + ".cs").Replace("\\", "/"),
                     ExpectedContent = GenerateActorDataSharedFactoryContent(factoryName, actorDataType.Name, namespaceName),
-                    InferredBaseName = baseName, // Store inferred base name
-                    GeneratedFilePrefix = ActorDataSharedFactoryPrefix // Store prefix
+                    InferredBaseName = baseName,
+                    GeneratedFilePrefix = ActorDataSharedFactoryPrefix
                 });
 
-                // Add Provider
                 expectedFiles.Add(new ExpectedGeneratedFileInfo
                 {
                     ExpectedPath = Path.Combine(ActorDataSharedProvidersFolder, providerName + ".cs").Replace("\\", "/"),
                     ExpectedContent = GenerateActorDataSharedProviderContent(providerName, actorDataType.Name, factoryName, namespaceName),
-                    InferredBaseName = baseName, // Store inferred base name
-                    GeneratedFilePrefix = ActorDataSharedProviderPrefix // Store prefix
+                    InferredBaseName = baseName,
+                    GeneratedFilePrefix = ActorDataSharedProviderPrefix
                 });
             }
 
-
             // Get all existing .cs files in the generated root folder and its subdirectories
             string[] existingGeneratedAssetPaths = Directory.GetFiles(GeneratedRootFolder, "*.cs", SearchOption.AllDirectories)
-                                                    .Select(p => p.Replace("\\", "/")) // Ensure Unity path format
+                                                    .Select(p => p.Replace("\\", "/"))
                                                     .ToArray();
 
             // Create a list of existing file information
@@ -209,7 +197,7 @@ namespace EasyCS.Editor
                 else
                 {
                     // Log files in the generated folder that we don't recognize
-                    if (!existingPath.Contains("EasyCS Generated/EasyCSCodeGeneratorReflection.cs")) // Don't log for the generator script itself
+                    if (!existingPath.Contains("EasyCS Generated/EasyCSCodeGeneratorReflection.cs"))
                     {
                         Debug.Log($"[EasyCS] Found unrecognized file in generated folder: {existingPath}. It will be considered for deletion if cleanup is enabled.");
                     }
@@ -222,10 +210,10 @@ namespace EasyCS.Editor
             // PHASE 1: Process existing files - attempt to move/rename and update content
             foreach (var existingFile in existingFiles)
             {
-                // Find the corresponding expected file info
+                // Find the corresponding expected file info based on inferred base name and prefix
                 var correspondingExpectedFile = expectedFiles.FirstOrDefault(ef =>
                     ef.InferredBaseName == existingFile.InferredBaseName &&
-                    // Handle old ActorDataFactory mapping to new ActorDataSharedFactory
+                    // Handle old ActorDataFactory mapping to new ActorDataSharedFactory for compatibility
                     ((existingFile.GeneratedFilePrefix == OldActorDataFactoryPrefix && ef.GeneratedFilePrefix == ActorDataSharedFactoryPrefix) ||
                      (existingFile.GeneratedFilePrefix != OldActorDataFactoryPrefix && existingFile.GeneratedFilePrefix == ef.GeneratedFilePrefix))
                 );
@@ -235,6 +223,7 @@ namespace EasyCS.Editor
                     string currentAssetPath = existingFile.CurrentPath;
                     string targetAssetPath = correspondingExpectedFile.ExpectedPath;
 
+                    // Determine if the file needs to be moved to a new location
                     bool needsMove = !currentAssetPath.Equals(targetAssetPath, StringComparison.OrdinalIgnoreCase);
 
                     if (needsMove)
@@ -246,22 +235,23 @@ namespace EasyCS.Editor
                             string currentFileGUID = AssetDatabase.AssetPathToGUID(currentAssetPath);
                             string targetFileGUID = AssetDatabase.AssetPathToGUID(targetAssetPath);
 
+                            // Check if the asset at the target path is actually the same asset
                             if (currentFileGUID == targetFileGUID)
                             {
-                                // The asset is already at the target path (or Unity thinks it is).
                                 Debug.Log($"[EasyCS] Asset '{Path.GetFileName(currentAssetPath)}' already exists at target path '{targetAssetPath}' with matching GUID. Skipping move.");
-                                // Update the path in the existingFiles list to the target path
+                                // Update the path in the existingFiles list to reflect its canonical location
                                 existingFile.CurrentPath = targetAssetPath;
                                 // Mark as successfully processed
                                 successfullyProcessedExistingPaths.Add(targetAssetPath);
-                                currentAssetPath = targetAssetPath; // Use the new path for content update
+                                // Use the new path for subsequent content update
+                                currentAssetPath = targetAssetPath;
                             }
                             else
                             {
-                                // A different file exists at the target path. This is a conflict.
+                                // A different file exists at the target path, indicating a conflict. Delete it.
                                 Debug.LogWarning($"[EasyCS] Conflict detected: A different file exists at target path '{targetAssetPath}'. Deleting conflicting file before move.");
                                 AssetDatabase.DeleteAsset(targetAssetPath);
-                                // Force save and refresh to help Unity process the deletion
+                                // Force save and refresh to help Unity process the deletion immediately
                                 AssetDatabase.SaveAssets();
                                 AssetDatabase.Refresh();
                                 // After deleting, the target path is now clear, proceed with move attempt below.
@@ -272,20 +262,21 @@ namespace EasyCS.Editor
                         if (!currentAssetPath.Equals(targetAssetPath, StringComparison.OrdinalIgnoreCase))
                         {
                             Debug.Log($"[EasyCS] Moving/Renaming file: {currentAssetPath} -> {targetAssetPath}");
-                            string moveError = AssetDatabase.MoveAsset(currentAssetPath, targetAssetPath); // Get the error message
+                            string moveError = AssetDatabase.MoveAsset(currentAssetPath, targetAssetPath);
 
-                            // FIX: Correctly check if the move failed (non-empty string)
+                            // Check if the move operation failed
                             if (!string.IsNullOrEmpty(moveError))
                             {
                                 Debug.LogError($"[EasyCS] Failed to move asset from {currentAssetPath} to {targetAssetPath}. Error: {moveError}. This might leave a broken file or orphaned meta file. Skipping content update for this file.");
-                                // Do NOT add to successfullyProcessedExistingPaths if move failed
-                                continue; // Skip content update for this file
+                                // Do NOT add to successfullyProcessedExistingPaths if move failed, as it wasn't moved
+                                continue; // Skip content update for this file if move failed
                             }
                             // Update the path in the existingFiles list if the move was successful
-                            existingFile.CurrentPath = targetAssetPath; // AssetDatabase.MoveAsset returns empty on success, use targetPath
-                                                                        // Mark as successfully processed
+                            existingFile.CurrentPath = targetAssetPath;
+                            // Mark as successfully processed
                             successfullyProcessedExistingPaths.Add(targetAssetPath);
-                            currentAssetPath = targetAssetPath; // Use the new path for content update
+                            // Use the new path for subsequent content update
+                            currentAssetPath = targetAssetPath;
                         }
                         else
                         {
@@ -301,11 +292,13 @@ namespace EasyCS.Editor
                     }
 
                     // Now, update its content if necessary (if not in cleanup-only mode)
-                    if (!cleanupOnly && successfullyProcessedExistingPaths.Contains(currentAssetPath)) // Only update if successfully processed
+                    // Only update if the file was successfully processed (moved or already in place)
+                    if (!cleanupOnly && successfullyProcessedExistingPaths.Contains(currentAssetPath))
                     {
                         try
                         {
-                            string existingContent = File.ReadAllText(currentAssetPath); // Read from the potentially new location
+                            string existingContent = File.ReadAllText(currentAssetPath);
+                            // Only write if content has actually changed to avoid unnecessary asset refreshes
                             if (existingContent != correspondingExpectedFile.ExpectedContent)
                             {
                                 File.WriteAllText(currentAssetPath, correspondingExpectedFile.ExpectedContent);
@@ -326,7 +319,8 @@ namespace EasyCS.Editor
             }
 
             // PHASE 2: Generate any files that were NOT successfully processed in Phase 1 (i.e., truly missing)
-            if (!cleanupOnly) // Only generate if not in cleanup-only mode
+            // This phase ensures all expected files exist in their correct location.
+            if (!cleanupOnly)
             {
                 foreach (var expectedFile in expectedFiles)
                 {
@@ -341,6 +335,7 @@ namespace EasyCS.Editor
                         try
                         {
                             string targetDirectory = Path.GetDirectoryName(expectedFile.ExpectedPath);
+                            // Create directory if it doesn't exist
                             if (!Directory.Exists(targetDirectory))
                             {
                                 Directory.CreateDirectory(targetDirectory);
@@ -366,23 +361,22 @@ namespace EasyCS.Editor
                 }
             }
 
-
             // PHASE 3: Clean up obsolete existing files (those not successfully processed)
-            if (!generateOnlyMissing) // Only delete if not in "generate only missing" mode
+            // This phase deletes any generated files that are no longer expected.
+            if (!generateOnlyMissing)
             {
                 foreach (var existingFile in existingFiles)
                 {
+                    // If an existing file was not successfully processed (moved or updated) in Phase 1, it's obsolete.
                     if (!successfullyProcessedExistingPaths.Contains(existingFile.CurrentPath))
                     {
-                        // This existing file was not successfully moved/updated or matched with any expected file, so it's obsolete.
                         Debug.Log($"[EasyCS] Deleting obsolete generated file: {existingFile.CurrentPath}");
                         AssetDatabase.DeleteAsset(existingFile.CurrentPath);
                     }
                 }
             }
 
-
-            // Clean up old directories and the old asmdef file (always run cleanup for old folders/asmdef)
+            // Clean up old directories and the old asmdef file (always attempt cleanup)
             CleanupEmptyDirectories(GeneratedRootFolder);
             if (File.Exists(OldEntityDataAsmdefPath))
             {
@@ -393,15 +387,15 @@ namespace EasyCS.Editor
             Debug.Log("[EasyCS] Combined generation and cleanup complete.");
         }
 
-
-        // --- Individual Script Content Generation ---
-
+        /// <summary>
+        /// Generates the C# content for an EntityDataFactory class.
+        /// </summary>
         private static string GenerateEntityDataFactoryContent(string factoryName, string entityDataTypeName, string namespaceName)
         {
             return string.Format(
 @"using EasyCS;
 using EasyCS.EntityFactorySystem;
-using UnityEngine; // Required for CreateAssetMenu
+using UnityEngine;
 using TriInspector;
 
 namespace {2}
@@ -414,43 +408,63 @@ namespace {2}
 }}", factoryName, entityDataTypeName, namespaceName);
         }
 
-        private static string GenerateEntityDataProviderContent(string providerName, string factoryName, string entityDataTypeName, string namespaceName)
+        /// <summary>
+        /// Generates the C# content for an EntityDataProvider class.
+        /// </summary>
+        private static string GenerateEntityDataProviderContent(string providerName, string entityDataTypeName, string namespaceName)
         {
+            string baseName = entityDataTypeName.Replace(EntityDataPrefix, "");
+            string displayBaseName = AddSpacesToSentence(baseName);
+            // The factory type name should be constructed from the EntityDataFactoryPrefix and the baseName, not the full entityDataTypeName.
+            string factoryGenericArgName = $"{EntityDataFactoryPrefix}{baseName}";
+
             return string.Format(
 @"using EasyCS;
 using EasyCS.EntityFactorySystem;
+using UnityEngine;
 using TriInspector;
 
 namespace {3}
 {{
     [DrawWithTriInspector]
-    public partial class {0} : EntityDataProvider<{1}, {2}>
+    [AddComponentMenu(""EasyCS/Entity/Data/Data {1}"")]
+    public partial class {0} : EntityDataProvider<{4}, {2}>
     {{
     }}
-}}", providerName, factoryName, entityDataTypeName, namespaceName);
+}}", providerName, displayBaseName, entityDataTypeName, namespaceName, factoryGenericArgName);
         }
 
+        /// <summary>
+        /// Generates the C# content for an EntityBehaviorProvider class.
+        /// </summary>
         private static string GenerateEntityBehaviorProviderContent(string providerName, string behaviorTypeName, string namespaceName)
         {
+            string baseName = behaviorTypeName.Replace(EntityBehaviorPrefix, "");
+            string displayBaseName = AddSpacesToSentence(baseName);
             return string.Format(
         @"using EasyCS;
 using EasyCS.EntityFactorySystem;
+using UnityEngine;
 using TriInspector;
 
 namespace {2}
 {{
     [DrawWithTriInspector]
-    public partial class {0} : EntityBehaviorProvider<{1}>
+    [AddComponentMenu(""EasyCS/Entity/Behavior/Behavior {1}"")]
+    public partial class {0} : EntityBehaviorProvider<{3}>
     {{
     }}
-}}", providerName, behaviorTypeName, namespaceName);
+}}", providerName, displayBaseName, namespaceName, behaviorTypeName);
         }
 
+        /// <summary>
+        /// Generates the C# content for an ActorDataSharedFactory class.
+        /// </summary>
         private static string GenerateActorDataSharedFactoryContent(string factoryName, string actorDataTypeName, string namespaceName)
         {
             return string.Format(
 @"using EasyCS;
-using UnityEngine; // Required for CreateAssetMenu
+using UnityEngine;
 using TriInspector;
 
 namespace {2}
@@ -463,24 +477,33 @@ namespace {2}
 }}", factoryName, actorDataTypeName, namespaceName);
         }
 
+        /// <summary>
+        /// Generates the C# content for an ActorDataSharedProvider class.
+        /// </summary>
         private static string GenerateActorDataSharedProviderContent(string providerName, string actorDataTypeName, string factoryName, string namespaceName)
         {
+            string baseName = actorDataTypeName.Replace(ActorDataSharedPrefix, "");
+            string displayBaseName = AddSpacesToSentence(baseName);
+            // The factory type name should be passed as factoryName which already has the correct format like "ActorDataSharedFactoryProjectilePrefab"
             return string.Format(
 @"using EasyCS;
+using UnityEngine;
 using TriInspector;
 
 namespace {3}
 {{
     [DrawWithTriInspector]
-    public partial class {0} : ActorDataSharedProviderBase<{1}, {2}>
+    [AddComponentMenu(""EasyCS/Actor/Data/Data {1}"")]
+    public partial class {0} : ActorDataSharedProviderBase<{4}, {2}>
     {{
     }}
-}}", providerName, actorDataTypeName, factoryName, namespaceName);
+}}", providerName, displayBaseName, factoryName, namespaceName, actorDataTypeName);
         }
 
-
-        // --- Assembly Definition Generation ---
-
+        /// <summary>
+        /// Handles the conditional generation or deletion of the EasyCS.Generated.asmdef file.
+        /// The .asmdef is skipped if user-defined types are found in 'Assembly-CSharp.dll'.
+        /// </summary>
         private static void HandleAsmdefGeneration()
         {
             if (ShouldGenerateAsmdef())
@@ -493,67 +516,63 @@ namespace {3}
                 if (File.Exists(AsmdefPath))
                 {
                     AssetDatabase.DeleteAsset(AsmdefPath);
-                    AssetDatabase.SaveAssets(); // Ensure deletion is processed
-                    AssetDatabase.Refresh();    // Ensure deletion is processed
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
                 }
             }
         }
 
+        /// <summary>
+        /// Generates the EasyCS.Generated.asmdef file with necessary references.
+        /// </summary>
         private static void GenerateAsmdefFile()
         {
             Debug.Log("[EasyCS] Generating Assembly Definition...");
-            // Ensure root folder exists (already done, but good practice)
-            EnsureGeneratedFolders(); // Note: This will call AssetDatabase.Refresh()
+            EnsureGeneratedFolders();
 
-            var referencedAssemblies = new HashSet<string> { "EasyCS.Runtime", "TriInspector" }; // Always reference EasyCS.Runtime and TriInspector
+            var referencedAssemblies = new HashSet<string> { "EasyCS.Runtime", "TriInspector" };
 
-            // Find all assemblies containing the user-defined base types and their derived types using reflection
             var baseTypes = new Type[] {
                 typeof(IEntityData),
                 typeof(IEntityBehavior),
                 typeof(ActorDataSharedBase)
-            }.Where(t => t != null).ToList(); // Filter out null if a base type is missing
+            }.Where(t => t != null).ToList();
 
             foreach (var baseType in baseTypes)
             {
                 var derivedTypes = GetAllTypesDerivedFrom(baseType);
                 foreach (var type in derivedTypes)
                 {
-                    if (type?.Assembly != null) // Added null check for Assembly
+                    if (type?.Assembly != null)
                     {
                         referencedAssemblies.Add(type.Assembly.GetName().Name);
                     }
                 }
-                // Also add the assembly of the base type itself
-                if (baseType?.Assembly != null) // Added null check for Assembly
+                if (baseType?.Assembly != null)
                 {
                     referencedAssemblies.Add(baseType.Assembly.GetName().Name);
                 }
             }
 
-            // Also add assemblies containing the generic base classes for generated types using reflection
-            // NOTE: Ensure the assembly containing these types is referenced by the assembly
-            // containing this generator script (e.g., EasyCS.Editor.asmdef -> EasyCS.Runtime.asmdef).
             var genericBaseTypes = new Type[] {
                 typeof(EntityDataFactory<>),
                 typeof(EntityDataProvider<,>),
                 typeof(EntityBehaviorProvider<>),
                 typeof(ActorDataSharedFactory<>),
                 typeof(ActorDataSharedProviderBase<,>)
-            }.Where(t => t != null).ToList(); // Filter out null if a generic base type is missing
+            }.Where(t => t != null).ToList();
 
             foreach (var genericBaseType in genericBaseTypes)
             {
-                if (genericBaseType?.Assembly != null) // Added null check for Assembly
+                if (genericBaseType?.Assembly != null)
                 {
                     referencedAssemblies.Add(genericBaseType.Assembly.GetName().Name);
                 }
             }
 
-
             string[] references = referencedAssemblies
                 .Distinct()
-                .OrderBy(r => r) // Order for consistency
+                .OrderBy(r => r)
                 .Select(r => $"\"{r}\"")
                 .ToArray();
 
@@ -578,30 +597,32 @@ namespace {3}
             Debug.Log($"[EasyCS] Generated Assembly Definition: {AsmdefPath}");
         }
 
-
-        // --- Helper Methods ---
-
+        /// <summary>
+        /// Determines if the EasyCS.Generated.asmdef file should be generated.
+        /// It returns false if any user-defined types (IEntityData, IEntityBehavior, ActorDataSharedBase)
+        /// are found in the default 'Assembly-CSharp.dll', indicating unwrapped dependencies.
+        /// </summary>
         private static bool ShouldGenerateAsmdef()
         {
-            // Get all user-defined types that the generator processes
             var userDefinedTypes = new List<Type>();
             userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(IEntityData)));
             userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(IEntityBehavior)));
             userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(ActorDataSharedBase)));
 
-            // Check if any of these user-defined types are in Assembly-CSharp.dll
             foreach (var type in userDefinedTypes)
             {
                 if (type?.Assembly != null && type.Assembly.GetName().Name == "Assembly-CSharp")
                 {
                     Debug.Log($"[EasyCS] Detected user-defined type '{type.FullName}' in 'Assembly-CSharp'. Skipping .asmdef generation.");
-                    return false; // Found unwrapped dependency
+                    return false;
                 }
             }
-            return true; // No unwrapped dependencies found
+            return true;
         }
 
-
+        /// <summary>
+        /// Ensures all necessary generated folders exist in the Unity project.
+        /// </summary>
         private static void EnsureGeneratedFolders()
         {
             Debug.Log("[EasyCS] Ensuring generated folders exist...");
@@ -616,12 +637,13 @@ namespace {3}
                     Directory.CreateDirectory(folder);
                 }
             }
-            // Refresh AssetDatabase to ensure Unity is aware of the new folders and creates .meta files
-            // This refresh is crucial before attempting to move assets into these folders.
             AssetDatabase.Refresh();
             Debug.Log("[EasyCS] Generated folders ensured.");
         }
 
+        /// <summary>
+        /// Writes content to a file, overwriting it only if the content has changed or the file doesn't exist.
+        /// </summary>
         private static void OverwriteIfChanged(string path, string newContent)
         {
             bool fileExists = File.Exists(path);
@@ -637,17 +659,21 @@ namespace {3}
             }
         }
 
-        // Helper to get the namespace of a type, returning null if not found or global
+        /// <summary>
+        /// Gets the namespace of a given Type, returns null if the type is null or has no namespace.
+        /// </summary>
         private static string GetNamespaceOf(Type type)
         {
             if (type == null || string.IsNullOrEmpty(type.Namespace))
             {
-                return null; // Or return a default namespace if preferred
+                return null;
             }
             return type.Namespace;
         }
 
-        // Helper to determine the expected subfolder for a given generated file prefix
+        /// <summary>
+        /// Determines the expected subfolder path for a generated file based on its prefix.
+        /// </summary>
         private static string GetExpectedSubfolderForPrefix(string prefix)
         {
             if (prefix.StartsWith(EntityDataFactoryPrefix)) return EntityDataFactoriesFolder;
@@ -655,10 +681,13 @@ namespace {3}
             if (prefix.StartsWith(EntityBehaviorProviderPrefix)) return EntityBehaviorProvidersFolder;
             if (prefix.StartsWith(ActorDataSharedFactoryPrefix)) return ActorDataSharedFactoriesFolder;
             if (prefix.StartsWith(ActorDataSharedProviderPrefix)) return ActorDataSharedProvidersFolder;
-            return GeneratedRootFolder; // Fallback, should not happen with correct prefixes
+            return GeneratedRootFolder;
         }
 
-        // Helper to try and infer generated file info from an existing path and name
+        /// <summary>
+        /// Attempts to infer information about an existing generated file (base name, prefix, etc.)
+        /// based on its asset path and naming conventions.
+        /// </summary>
         private static ExistingGeneratedFileInfo TryInferGeneratedFileInfo(string assetPath)
         {
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(assetPath);
@@ -691,13 +720,11 @@ namespace {3}
                 inferredBaseName = fileNameWithoutExtension.Replace(ActorDataSharedProviderPrefix, "");
                 generatedFilePrefix = ActorDataSharedProviderPrefix;
             }
-            // Special handling for old ActorData factories with the old prefix
             else if (fileNameWithoutExtension.StartsWith(OldActorDataFactoryPrefix))
             {
                 inferredBaseName = fileNameWithoutExtension.Replace(OldActorDataFactoryPrefix, "");
-                generatedFilePrefix = OldActorDataFactoryPrefix; // Keep old prefix for identification
+                generatedFilePrefix = OldActorDataFactoryPrefix;
             }
-
 
             if (inferredBaseName != null && generatedFilePrefix != null)
             {
@@ -710,12 +737,14 @@ namespace {3}
                 };
             }
 
-            return null; // Could not infer generated file info
+            return null;
         }
 
-
-        // --- Reflection Helpers (Copied and adapted from original generators) ---
-
+        /// <summary>
+        /// Retrieves all concrete, non-abstract types derived from a specified base type (class or interface)
+        /// across all loaded assemblies in the current AppDomain.
+        /// Handles both direct class inheritance and interface implementation, as well as raw generic type definitions.
+        /// </summary>
         private static List<Type> GetAllTypesDerivedFrom(Type baseType)
         {
             if (baseType == null) return new List<Type>();
@@ -746,7 +775,9 @@ namespace {3}
                 ).ToList();
         }
 
-        // Helper to check if a type inherits from a raw generic type definition (e.g., EntityDataFactory<>)
+        /// <summary>
+        /// Checks if a given type inherits from a raw generic type definition (e.g., `List<>` or `EntityDataFactory<>`).
+        /// </summary>
         private static bool InheritsFromRawGeneric(Type toCheck, Type generic)
         {
             if (toCheck == null || generic == null || !generic.IsGenericTypeDefinition) return false;
@@ -763,21 +794,24 @@ namespace {3}
             return false;
         }
 
-        // Helper to detect the class name from file content using regex (basic parsing)
-        // This method is not directly used in the revised GenerateAndCleanup logic
-        // for determining target paths, as file name conventions are assumed.
+        /// <summary>
+        /// Detects the class name from a C# file content using a regex.
+        /// This method is not directly used in the main generation logic for path determination,
+        /// as file naming conventions are assumed.
+        /// </summary>
         private static string DetectClassName(string content)
         {
-            // Regex to find 'class ClassName' or 'public class ClassName' etc.
             var match = Regex.Match(content, @"\b(public|private|protected|internal|\s+)\s+class\s+(\w+)\b");
             if (match.Success && match.Groups.Count > 2)
             {
-                return match.Groups[2].Value; // Capture group 2 is the class name
+                return match.Groups[2].Value;
             }
-            return null; // Class name not found or pattern not matched
+            return null;
         }
 
-        // Helper to check if a file name matches one of the expected generated patterns
+        /// <summary>
+        /// Checks if a file name matches one of the expected patterns for generated EasyCS files.
+        /// </summary>
         private static bool IsExpectedGeneratedFileName(string fileName)
         {
             return fileName.StartsWith(EntityDataFactoryPrefix) ||
@@ -785,11 +819,13 @@ namespace {3}
                    fileName.StartsWith(EntityBehaviorProviderPrefix) ||
                    fileName.StartsWith(ActorDataSharedFactoryPrefix) ||
                    fileName.StartsWith(ActorDataSharedProviderPrefix) ||
-                   // Also include the old ActorData Factory prefix for cleanup/migration
                    fileName.StartsWith(OldActorDataFactoryPrefix);
         }
 
-        // Helper to clean up empty directories recursively
+        /// <summary>
+        /// Recursively cleans up empty directories starting from a specified path.
+        /// It deletes empty directories and their .meta files.
+        /// </summary>
         private static void CleanupEmptyDirectories(string startDirectory)
         {
             if (!Directory.Exists(startDirectory))
@@ -797,24 +833,33 @@ namespace {3}
 
             foreach (var directory in Directory.GetDirectories(startDirectory))
             {
-                CleanupEmptyDirectories(directory); // Recurse first
+                CleanupEmptyDirectories(directory);
                 if (!Directory.GetFiles(directory).Any() && !Directory.GetDirectories(directory).Any())
                 {
                     Debug.Log($"[EasyCS] Deleting empty directory: {directory}");
-                    // Use AssetDatabase.DeleteAsset to delete the directory and its .meta file
                     AssetDatabase.DeleteAsset(directory.Replace("\\", "/"));
                 }
             }
         }
 
+        /// <summary>
+        /// Converts a camel case string to a sentence-cased string by adding spaces.
+        /// E.g., "HealthMax" becomes "Health Max".
+        /// </summary>
+        private static string AddSpacesToSentence(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return "";
+            return Regex.Replace(text, "(?<!^)([A-Z])", " $1").Trim();
+        }
 
         // Helper class to hold information about an expected generated file
         private class ExpectedGeneratedFileInfo
         {
             public string ExpectedPath { get; set; }
             public string ExpectedContent { get; set; }
-            public string InferredBaseName { get; set; } // Added to store inferred base name
-            public string GeneratedFilePrefix { get; set; } // Added to store the generated file prefix
+            public string InferredBaseName { get; set; }
+            public string GeneratedFilePrefix { get; set; }
         }
 
         // Helper class to hold information about an existing generated file
@@ -822,8 +867,8 @@ namespace {3}
         {
             public string CurrentPath { get; set; }
             public string CurrentFileName { get; set; }
-            public string InferredBaseName { get; set; } // Inferred base name from file name
-            public string GeneratedFilePrefix { get; set; } // Inferred prefix from file name
+            public string InferredBaseName { get; set; }
+            public string GeneratedFilePrefix { get; set; }
         }
     }
 }
