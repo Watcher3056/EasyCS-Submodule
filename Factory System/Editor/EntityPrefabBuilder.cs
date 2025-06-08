@@ -131,7 +131,8 @@ namespace EasyCS.EntityFactorySystem.Editor
         {
             GameObject entityGO = current == null ? new GameObject() : current.gameObject;
             entityGO.AddComponent<EntityEditorComponentFlag>().hideFlags = HideFlags.HideInInspector;
-            Actor actor= entityGO.AddComponent<Actor>();
+            Actor actor = entityGO.AddComponent<Actor>();
+            EntityTemplateProvider entityTemplateProvider = entityGO.AddComponent<EntityTemplateProvider>();
 
             if (string.IsNullOrEmpty(entityData.Name) == false)
                 entityGO.name = entityData.Name;
@@ -186,7 +187,7 @@ namespace EasyCS.EntityFactorySystem.Editor
                 }
             }
 
-            actor.EditorSetEntityTemplate(entityData.Template);
+            entityTemplateProvider.EditorSetEntityTemplate(entityData.Template);
 
             return entityGO;
         }
