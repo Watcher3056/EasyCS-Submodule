@@ -202,9 +202,9 @@ namespace EasyCS
             if (entityProvider) sorted.Add(entityProvider);
             if (actor) sorted.Add(actor);
 
-            sorted.AddRange(behaviors.Except(sorted));
-            sorted.AddRange(datas.Except(sorted));
             sorted.AddRange(actorData.Except(sorted));
+            sorted.AddRange(datas.Except(sorted));
+            sorted.AddRange(behaviors.Except(sorted));
             sorted.AddRange(actorComponents.Except(sorted));
             sorted.AddRange(untouched); // maintain order of unrelated components
 
