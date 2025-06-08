@@ -883,8 +883,8 @@ public partial class {1} {{ }}"; // Class name without "Partial" prefix
             Debug.Log("[EasyCS] Generating Assembly Definition...");
             EnsureGeneratedFolders();
 
-            // Only EasyCS.Runtime is consistently required here
-            var referencedAssemblies = new HashSet<string> { "EasyCS.Runtime" };
+            // Only EasyCS.Runtime and TriInspector are consistently required here
+            var referencedAssemblies = new HashSet<string> { "EasyCS.Runtime", "TriInspector" };
 
             var baseTypes = new Type[] {
                 typeof(IEntityData),
@@ -1004,10 +1004,6 @@ public partial class {1} {{ }}"; // Class name without "Partial" prefix
         {
             Debug.Log("[EasyCS] Handling .asmref generation for partial class folders...");
 
-            // Get all existing .asmref files under the PartialsRootFolder for cleanup
-            string[] existingAsmrefPaths = Directory.GetFiles(PartialsRootFolder, "*.asmref", SearchOption.AllDirectories)
-                                                    .Select(p => p.Replace("\\", "/"))
-                                                    .ToArray();
             var expectedAsmrefPaths = new HashSet<string>();
 
             foreach (var assemblyName in originalAssemblyNames)
@@ -1048,9 +1044,10 @@ public partial class {1} {{ }}"; // Class name without "Partial" prefix
                     Debug.LogError($"Error writing .asmref for '{assemblyName}' at {asmrefPath}: {e.Message}");
                 }
             }
-
-            // Cleanup obsolete .asmref files in partials folder (handled by the broader partials cleanup below)
+            // The cleanup of obsolete .asmref files in partials folder is now handled by the broader partials cleanup below.
             // No specific action needed here as the larger cleanup will catch them.
+            AssetDatabase.Refresh(); // Final refresh for .asmref changes
+            Debug.Log("[EasyCS] .asmref handling for partial class folders complete.");
         }
 
 
