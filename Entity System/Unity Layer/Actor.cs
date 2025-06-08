@@ -9,6 +9,9 @@ namespace EasyCS
     [DisallowMultipleComponent]
     [SelectionBase]
     [IconClass(ConstantsIcons.IconActor)]
+#if ODIN_INSPECTOR
+    [HideMonoScript]
+#endif
     public class Actor : EasyCSBehavior, IHasEntity
     {
         public enum EntityComponentSetupPolicy

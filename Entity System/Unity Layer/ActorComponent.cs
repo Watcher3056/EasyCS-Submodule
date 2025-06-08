@@ -6,23 +6,48 @@ using UnityEngine;
 namespace EasyCS
 {
     [HideMonoScript]
-    public class ActorComponent : EasyCSBehavior, IEventListener<EventEntityKilled>
+#if ODIN_INSPECTOR
+    [Sirenix.OdinInspector.HideMonoScript]
+#endif
+    public abstract class ActorComponent : EasyCSBehavior, IEventListener<EventEntityKilled>
     {
+#if ODIN_INSPECTOR
+        [SerializeField, Sirenix.OdinInspector.ReadOnly, Sirenix.OdinInspector.Required, Sirenix.OdinInspector.ShowIf("EditorShowActor")]
+#else
         [SerializeField, ReadOnly, Required, ShowIf("EditorShowActor")]
+#endif
         private Actor _actor;
         public Actor Actor => _actor;
         public Entity Entity => _actor != null ? _actor.Entity : Entity.Empty;
 
 #if UNITY_EDITOR
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.InfoBox("Disable reason: Entity not set", Sirenix.OdinInspector.InfoMessageType.Warning, "EditorShowWarningDisabledEntityNotSet")]
+        [Sirenix.OdinInspector.ShowInInspector, Sirenix.OdinInspector.ReadOnly, Sirenix.OdinInspector.ShowIf("EditorShowWarningDisabledEntityNotSet"), Sirenix.OdinInspector.HideInEditorMode]
+#else
         [InfoBox("Disable reason: Entity not set", TriMessageType.Warning, "EditorShowWarningDisabledEntityNotSet")]
         [ShowInInspector, ReadOnly, ShowIf("EditorShowWarningDisabledEntityNotSet"), ShowInPlayMode]
+#endif
         private bool _entityNotSet = true;
+
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.InfoBox("Disable reason: Entity not alive", Sirenix.OdinInspector.InfoMessageType.Warning, "EditorShowWarningDisabledEntityNotAlive")]
+        [Sirenix.OdinInspector.ShowInInspector, Sirenix.OdinInspector.ReadOnly, Sirenix.OdinInspector.ShowIf("EditorShowWarningDisabledEntityNotAlive"), Sirenix.OdinInspector.HideInEditorMode]
+#else
         [InfoBox("Disable reason: Entity not alive", TriMessageType.Warning, "EditorShowWarningDisabledEntityNotAlive")]
         [ShowInInspector, ReadOnly, ShowIf("EditorShowWarningDisabledEntityNotAlive"), ShowInPlayMode]
+#endif
         private bool _entityNotAlive = true;
+
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.LabelText("Missing Dependencies"), Sirenix.OdinInspector.ShowInInspector, Sirenix.OdinInspector.ShowIf("EditorHasMissingDependencies"), Sirenix.OdinInspector.ReadOnly,
+            Sirenix.OdinInspector.InfoBox("Actor has missing dependencies for this component!", Sirenix.OdinInspector.InfoMessageType.Error, "EditorHasMissingDependencies"),
+            Sirenix.OdinInspector.ListDrawerSettings(ShowFoldout = false)]
+#else
         [LabelText("Missing Dependencies"), ShowInInspector, ShowIf("EditorHasMissingDependencies"), ReadOnly,
             InfoBox("Actor has missing dependencies for this component!", TriMessageType.Error, "EditorHasMissingDependencies"),
             ListDrawerSettings(AlwaysExpanded = true)]
+#endif
         private List<string> _editorMissingDependencies = new List<string>();
 #endif
 

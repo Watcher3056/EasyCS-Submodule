@@ -19,9 +19,17 @@ namespace EasyCS
     {
         [SerializeField]
         private Source _source;
+#if ODIN_INSPECTOR
+        [SerializeField, Sirenix.OdinInspector.Required, Sirenix.OdinInspector.ShowIf("_source", Source.Asset)]
+#else
         [SerializeField, Required, ShowIf("_source", Source.Asset)]
+#endif
         private TFactory _factory;
+#if ODIN_INSPECTOR
+        [SerializeField, Sirenix.OdinInspector.ShowIf("_source", Source.Embedded), Sirenix.OdinInspector.HideLabel, Sirenix.OdinInspector.InlineProperty]
+#else
         [SerializeField, ShowIf("_source", Source.Embedded), HideLabel, InlineProperty]
+#endif
         private TComponent _component;
 
         public IEntityDataFactory DataFactory => _source == Source.Asset ? _factory : null;
@@ -96,7 +104,12 @@ namespace EasyCS
             UnityEditor.EditorUtility.SetDirty(this);
         }
 
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.Button, Sirenix.OdinInspector.ShowIf("EditorShowConvertToAssetButton"),
+            Sirenix.OdinInspector.HorizontalGroup("Buttons"), Sirenix.OdinInspector.HideInPlayMode]
+#else
         [Button, ShowIf("EditorShowConvertToAssetButton"), Group("Buttons"), HideInPlayMode]
+#endif
         private void ConvertToAsset()
         {
             const string defaultFolder = "Assets/EntityDataFactories";
@@ -108,7 +121,12 @@ namespace EasyCS
             CreateAndSaveFactoryAsset(path);
         }
 
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.Button, Sirenix.OdinInspector.ShowIf("EditorShowConvertToAssetButton"), 
+            Sirenix.OdinInspector.HorizontalGroup("Buttons"), Sirenix.OdinInspector.HideInPlayMode]
+#else
         [Button, ShowIf("EditorShowConvertToAssetButton"), Group("Buttons"), HideInPlayMode]
+#endif
         private void ConvertToAssetAs()
         {
             string path = UnityEditor.EditorUtility.SaveFilePanelInProject(
