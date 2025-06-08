@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using TriInspector;
 using UnityEditor;
 using UnityEngine;
 
 namespace EasyCS
 {
+    [IconClass(ConstantsIcons.IconEntity)]
     public abstract class EntityBehaviorProvider<T> : ActorComponent, IEntityBehaviorProvider
         where T : IEntityBehavior
     {

@@ -122,7 +122,7 @@ namespace EasyCS.EntityFactorySystem.Editor
                 entityData.ChildEntities.Add(childEntityData);
             }
 
-            entityData.Template = transform.GetComponent<Actor>().EntityTemplate;
+            entityData.Template = transform.GetComponent<EntityTemplateProvider>().EntityTemplate;
 
             return entityData;
         }

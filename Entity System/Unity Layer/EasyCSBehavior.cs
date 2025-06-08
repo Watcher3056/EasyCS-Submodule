@@ -176,6 +176,7 @@ namespace EasyCS
 
             Component prefabRoot = GetComponent<PrefabRootData>();
             Component entityProvider = GetComponent<EntityProvider>();
+            Component entityTemplateProvider = GetComponent<EntityTemplateProvider>();
             Component actor = GetComponent<Actor>();
 
             // Collect categorized components
@@ -200,11 +201,12 @@ namespace EasyCS
             // Compose new sorted order
             if (prefabRoot) sorted.Add(prefabRoot);
             if (entityProvider) sorted.Add(entityProvider);
+            if (entityTemplateProvider) sorted.Add(entityTemplateProvider);
             if (actor) sorted.Add(actor);
 
-            sorted.AddRange(behaviors.Except(sorted));
-            sorted.AddRange(datas.Except(sorted));
             sorted.AddRange(actorData.Except(sorted));
+            sorted.AddRange(datas.Except(sorted));
+            sorted.AddRange(behaviors.Except(sorted));
             sorted.AddRange(actorComponents.Except(sorted));
             sorted.AddRange(untouched); // maintain order of unrelated components
 

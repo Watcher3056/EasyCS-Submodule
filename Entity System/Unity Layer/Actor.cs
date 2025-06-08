@@ -8,6 +8,10 @@ namespace EasyCS
 {
     [DisallowMultipleComponent]
     [SelectionBase]
+    [IconClass(ConstantsIcons.IconActor)]
+#if ODIN_INSPECTOR
+    [HideMonoScript]
+#endif
     public class Actor : EasyCSBehavior, IHasEntity
     {
         public enum EntityComponentSetupPolicy
@@ -17,7 +21,6 @@ namespace EasyCS
             OverrideFromActor,
             SetAsInActor
         }
-
         [SerializeField, ReadOnly]
         private EntityProvider _entityProvider;
 
@@ -82,9 +85,6 @@ namespace EasyCS
 
         private Dictionary<Type, ActorComponent> _actorComponents = new Dictionary<Type, ActorComponent>();
         private readonly Dictionary<Type, object> _actorComponentsAndData = new();
-
-        [field: SerializeField]
-        public EntityTemplateAsset EntityTemplate { get; private set; }
 
         [SerializeField, ReadOnly]
         private List<ActorComponent> _allComponents = new List<ActorComponent>();
@@ -569,7 +569,6 @@ namespace EasyCS
             foreach (var component in _allComponents)
                 component.SetActor(this);
 
-            EditorApplyEntityTemplate();
             EditorValidateAllComponentDependencies();
             ValidateSetup();
             EditorUpdateUnusedDependencies();
@@ -689,44 +688,7 @@ namespace EasyCS
             EditorUpdateMissingActorDependenciesList();
         }
 
-        private void EditorApplyEntityTemplate()
-        {
-            if (EntityTemplate == null)
-                return;
-
-            var componentTypes = EntityTemplate.GetComponentTypes();
-
-            List<Type> providersToAdd = new List<Type>();
-
-            foreach (var type in componentTypes)
-            {
-                Type providerType = EntityComponentProviderFinder.FindEntityComponentProviderMatching(type);
-
-                if (providerType != null)
-                {
-                    if (_allComponents.Exists(c => c.GetType() == providerType))
-                        continue;
-                    if (_entityComponentsMissing.Exists(c => c.GetType() == type))
-                        continue;
-
-                    providersToAdd.Add(providerType);
-                }
-            }
-
-            if (providersToAdd.Count > 0)
-            {
-                UnityEditor.EditorApplication.delayCall += () =>
-                {
-                    if (this == null) return;
-
-                    foreach (var provider in providersToAdd)
-                        if (gameObject.GetComponent(provider) == null)
-                            UnityEditor.Undo.AddComponent(gameObject, provider);
-
-                    UnityEditor.EditorUtility.SetDirty(gameObject);
-                };
-            }
-        }
+        
 
         public List<string> EditorGetMissingDependenciesNamesForAllComponents(EditorDependenciesType dependenciesType)
         {
@@ -877,11 +839,8 @@ namespace EasyCS
 
         public bool EditorHasUnusedDependencies() => _editorUnusedDependencies.Count > 0;
 
-        public void EditorSetEntityTemplate(EntityTemplateAsset entityTemplateAsset)
-        {
-            EntityTemplate = entityTemplateAsset;
-            EditorApplyEntityTemplate();
-        }
+        public List<ActorComponent> EditorGetAllComponentsSerialized() => _allComponents;
+        public List<IEntityComponent> EditorGetEntityComponentsMissingSerialized() => _entityComponentsMissing;
 #endif
     }
 }

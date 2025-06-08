@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using TriInspector;
-using UnityEditor;
 using UnityEngine;
 
 namespace EasyCS
@@ -13,15 +12,24 @@ namespace EasyCS
     }
 
     [DeclareHorizontalGroup("Buttons")]
+    [IconClass(ConstantsIcons.IconEntity)]
     public abstract class EntityDataProvider<TFactory, TComponent> : ActorComponent, IEntityDataProvider
         where TFactory : ScriptableObject, IEntityDataFactory
         where TComponent : IEntityData
     {
         [SerializeField]
         private Source _source;
+#if ODIN_INSPECTOR
+        [SerializeField, Sirenix.OdinInspector.Required, Sirenix.OdinInspector.ShowIf("_source", Source.Asset)]
+#else
         [SerializeField, Required, ShowIf("_source", Source.Asset)]
+#endif
         private TFactory _factory;
+#if ODIN_INSPECTOR
+        [SerializeField, Sirenix.OdinInspector.ShowIf("_source", Source.Embedded), Sirenix.OdinInspector.HideLabel, Sirenix.OdinInspector.InlineProperty]
+#else
         [SerializeField, ShowIf("_source", Source.Embedded), HideLabel, InlineProperty]
+#endif
         private TComponent _component;
 
         public IEntityDataFactory DataFactory => _source == Source.Asset ? _factory : null;
@@ -81,22 +89,27 @@ namespace EasyCS
         public void EditorSetFactory(IEntityDataFactory factory)
         {
             _factory = (TFactory)factory;
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         public void EditorSetData(IEntityData component)
         {
             _component = (TComponent)component;
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         public void EditorSetSource(Source source)
         {
             _source = source;
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.Button, Sirenix.OdinInspector.ShowIf("EditorShowConvertToAssetButton"),
+            Sirenix.OdinInspector.HorizontalGroup("Buttons"), Sirenix.OdinInspector.HideInPlayMode]
+#else
         [Button, ShowIf("EditorShowConvertToAssetButton"), Group("Buttons"), HideInPlayMode]
+#endif
         private void ConvertToAsset()
         {
             const string defaultFolder = "Assets/EntityDataFactories";
@@ -108,10 +121,15 @@ namespace EasyCS
             CreateAndSaveFactoryAsset(path);
         }
 
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.Button, Sirenix.OdinInspector.ShowIf("EditorShowConvertToAssetButton"), 
+            Sirenix.OdinInspector.HorizontalGroup("Buttons"), Sirenix.OdinInspector.HideInPlayMode]
+#else
         [Button, ShowIf("EditorShowConvertToAssetButton"), Group("Buttons"), HideInPlayMode]
+#endif
         private void ConvertToAssetAs()
         {
-            string path = EditorUtility.SaveFilePanelInProject(
+            string path = UnityEditor.EditorUtility.SaveFilePanelInProject(
                 "Export EntityData Factory",
                 $"{typeof(TComponent).Name}Factory_{name}",
                 "asset",
@@ -137,16 +155,16 @@ namespace EasyCS
                 }
             }
 
-            AssetDatabase.CreateAsset(factory, path);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
+            UnityEditor.AssetDatabase.CreateAsset(factory, path);
+            UnityEditor.AssetDatabase.SaveAssets();
+            UnityEditor.AssetDatabase.Refresh();
 
             Debug.Log($"EntityDataFactory asset saved to: {path}");
 
             _source = Source.Asset;
             _factory = factory;
 
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         public IEntityDataFactory EditorGetFactory() => _factory;

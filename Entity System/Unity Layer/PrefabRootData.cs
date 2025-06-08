@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace EasyCS
 {
+#if ODIN_INSPECTOR
+    [HideMonoScript]
+#endif
     public class PrefabRootData : MonoBehaviour, IGUID
     {
         [Serializable]

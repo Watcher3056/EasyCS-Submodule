@@ -9,6 +9,8 @@ namespace EasyCS
         {
             foreach (Transform child in transform)
                 child.gameObject.TryGetElseSetComponent<Actor>();
+            foreach (Transform child in transform)
+                child.gameObject.TryGetElseSetComponent<EntityTemplateProvider>();
         }
     }
 }
