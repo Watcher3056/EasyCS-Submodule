@@ -29,10 +29,12 @@ namespace EasyCS
         private UnityEngine.Object _object;
 
 #if UNITY_EDITOR
-        [ShowInInspector]
         [HideLabel]
 #if ODIN_INSPECTOR
         [LabelText("@_EditorGetLabelName()")]
+        [Sirenix.OdinInspector.ShowInInspector]
+#else
+        [ShowInInspector]
 #endif
         [ValidateInput("_EditorValidateInput")]
         [InfoBox("Required!", TriMessageType.Error, visibleIf: "ParentHasRequiredAttribute")]
