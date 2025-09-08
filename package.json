@@ -1,0 +1,14 @@
+{
+  "name": "com.watcher.easycs",
+  "version": "1.1.2",
+  "displayName": "EasyCS Submodule",
+  "description": "EasyCS framework submodule",
+  "unity": "2020.3",
+  "author": {
+    "name": "Watcher3056",
+    "url": "https://github.com/Watcher3056"
+  },
+  "dependencies": {
+    "com.codewriter.triinspector": "https://github.com/Watcher3056/Tri-Inspector-Plus.git"
+  }
+}
