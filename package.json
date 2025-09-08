@@ -8,7 +8,5 @@
     "name": "Watcher3056",
     "url": "https://github.com/Watcher3056"
   },
-  "dependencies": {
-    "com.codewriter.triinspector": "https://github.com/Watcher3056/Tri-Inspector-Plus.git"
-  }
+  "dependencies": {}
 }
