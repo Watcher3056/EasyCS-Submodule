@@ -559,7 +559,7 @@ namespace EasyCS
 
             EntityData entityData = GetDataByEntity(entity);
 
-            foreach (ActorComponent actorComponent in actor.GetAllComponents())
+            foreach (IActorComponent actorComponent in actor.GetAllComponents())
             {
                 Injector.InjectEntityDependencies(actorComponent, entityData._componentsByType);
                 Injector.InjectActorDataDependencies(actorComponent, actor.GetAllActorComponentsAndData());

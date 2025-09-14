@@ -4,7 +4,7 @@ using TriInspector;
 namespace EasyCS
 {
     [IconClass(ConstantsIcons.IconActor)]
-    public abstract class ActorData : ActorComponent, IActorData, IActorDataProvider
+    public abstract class ActorData : ActorComponent, IActorDataComponent
     {
         public IActorData GetActorData() => this;
 

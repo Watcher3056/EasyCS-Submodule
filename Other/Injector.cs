@@ -22,7 +22,7 @@ namespace EasyCS
         {
             var entityComponentType = typeof(IEntityComponent);
             var actorDataType = typeof(IActorData);
-            var actorComponentType = typeof(ActorComponent);
+            var actorComponentInterfaceType = typeof(IActorComponent);
 
             var allTypes = AppDomain.CurrentDomain
                 .GetAssemblies()
@@ -40,7 +40,7 @@ namespace EasyCS
                 // Only scan types that can be injected into
                 bool isInjectable =
                     typeof(IEntityBehavior).IsAssignableFrom(type) ||
-                    typeof(ActorComponent).IsAssignableFrom(type);
+                    typeof(IActorComponent).IsAssignableFrom(type);
 
                 if (!isInjectable)
                     continue;
@@ -57,7 +57,7 @@ namespace EasyCS
                         dataFields.Add(field);
                     else if (actorDataType.IsAssignableFrom(field.FieldType))
                         dataFields.Add(field);
-                    else if (actorComponentType.IsAssignableFrom(field.FieldType))
+                    else if (actorComponentInterfaceType.IsAssignableFrom(field.FieldType))
                         dataFields.Add(field);
                 }
 
@@ -81,7 +81,7 @@ namespace EasyCS
             InjectIntoObject(behavior, dataComponents);
         }
 
-        public static void InjectEntityDependencies(ActorComponent component,
+        public static void InjectEntityDependencies(IActorComponent component,
             Dictionary<Type, IEntityComponent> dataComponents)
         {
             InjectIntoObject(component, dataComponents);

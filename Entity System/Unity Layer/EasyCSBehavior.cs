@@ -6,13 +6,13 @@ using UnityEngine;
 
 namespace EasyCS
 {
-    public abstract class EasyCSBehavior : MonoBehaviour, IHasContainer, IAwake, IActive
+    public abstract class EasyCSBehavior : MonoBehaviour, IEasyCSBehavior
     {
         public IEasyCSObjectResolver EasyCsContainer { get; private set; }
         public IEventSystem EventSystem { get; private set; }
 
         public virtual bool IsActive => gameObject.activeInHierarchy && enabled;
-        public event Action<EasyCSBehavior> OnBeforeDestroy = (behavior) => { };
+        public event Action<IEasyCSBehavior> OnBeforeDestroy = (behavior) => { };
         private LifetimeLoopSystem _lifetimeLoopSystem;
         private bool _hasAwakeBeenCalled;
         private bool _hasAwakeBeenExecuted;
@@ -98,6 +98,11 @@ namespace EasyCS
 
                 HandleOnEnable();
             }
+        }
+
+        void IEasyCSBehavior.InternalOnEnable()
+        {
+            InternalOnEnable();
         }
 
         private void OnDisable()
@@ -194,7 +199,7 @@ namespace EasyCS
                 if (comp is IEntityBehaviorProvider) behaviors.Add(comp);
                 else if (comp is IEntityDataProvider) datas.Add(comp);
                 else if (comp is IActorDataProvider) actorData.Add(comp);
-                else if (comp is ActorComponent) actorComponents.Add(comp);
+                else if (comp is IActorComponent) actorComponents.Add(comp);
                 else untouched.Add(comp);
             }
 

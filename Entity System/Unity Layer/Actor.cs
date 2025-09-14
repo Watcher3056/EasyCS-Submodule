@@ -29,8 +29,8 @@ namespace EasyCS
         public EntityContainer EntityContainer { get; private set; }
 
         public event Action<Entity> OnEntityChanged = (entity) => { };
-        public event Action<Actor, ActorComponent> OnComponentAdded = (actor, component) => { };
-        public event Action<Actor, ActorComponent> OnComponentRemoved = (actor, component) => { };
+        public event Action<Actor, IActorComponent> OnComponentAdded = (actor, component) => { };
+        public event Action<Actor, IActorComponent> OnComponentRemoved = (actor, component) => { };
         public event Action<Actor, IActorDataProvider> OnActorDataAdded = (actor, data) => { };
         public event Action<Actor, IActorDataProvider> OnActorDataRemoved = (actor, data) => { };
 
@@ -38,7 +38,7 @@ namespace EasyCS
         public IReadOnlyCollection<IEntityBehavior> BehaviorComponents => Entity.BehaviorComponents;
         public EntityProvider EntityProvider => _entityProvider;
 
-        public IReadOnlyDictionary<Type, ActorComponent> ActorComponents => _actorComponents;
+        public IReadOnlyDictionary<Type, IActorComponent> ActorComponents => _actorComponents;
         [ShowInPlayMode, ReadOnly]
         public IEnumerable<IActorData> ActorData => GetAllActorData();
 
@@ -83,11 +83,11 @@ namespace EasyCS
         private Transform _transform;
         private GameObject _gameObject;
 
-        private Dictionary<Type, ActorComponent> _actorComponents = new Dictionary<Type, ActorComponent>();
+        private Dictionary<Type, IActorComponent> _actorComponents = new Dictionary<Type, IActorComponent>();
         private readonly Dictionary<Type, object> _actorComponentsAndData = new();
 
         [SerializeField, ReadOnly]
-        private List<ActorComponent> _allComponents = new List<ActorComponent>();
+        private List<MonoBehaviour> _allComponents = new List<MonoBehaviour>();
 
         [SerializeReference, HideInInspector]
         private List<IEntityComponent> _entityComponentsMissing = new List<IEntityComponent>();
@@ -129,7 +129,7 @@ namespace EasyCS
         private List<string> _editorActorComponentsMissing = new List<string>();
 
         [LabelText("Unused Actor Dependencies"), ShowInInspector, ShowIf("EditorHasUnusedDependencies"), ReadOnly]
-        private List<ActorComponent> _editorUnusedDependencies = new List<ActorComponent>();
+        private List<MonoBehaviour> _editorUnusedDependencies = new List<MonoBehaviour>();
 #endif
 
         public IEnumerable<IEntityData> EntityDataMissing
@@ -162,8 +162,9 @@ namespace EasyCS
         {
             for (int i = 0; i < _allComponents.Count; i++)
             {
-                var component = _allComponents[i];
-                RegisterActorComponent(component, false);
+                var component = _allComponents[i] as IActorComponent;
+                if (component != null)
+                    RegisterActorComponent(component, false);
             }
 
             if (_entityProvider != null)
@@ -182,7 +183,7 @@ namespace EasyCS
 
             if (entity.Equals(Entity.Empty) == false)
             {
-                foreach (var component in _allComponents)
+                foreach (var component in GetAllComponents())
                     component.InternalHandleDetachFromEntity(entity);
             }
 
@@ -194,7 +195,7 @@ namespace EasyCS
 
                 EntityContainer.InternalAttachActorToEntity(entity, this);
 
-                foreach (var component in _allComponents)
+                foreach (var component in GetAllComponents())
                     component.InternalHandleAttachToEntity(entity);
             }
 
@@ -241,7 +242,7 @@ namespace EasyCS
             }
 
             // 2. Apply components from providers
-            foreach (ActorComponent actorComponent in _allComponents)
+            foreach (var actorComponent in GetAllComponents())
             {
                 IEntityComponentProvider entityComponentProvider = actorComponent as IEntityComponentProvider;
 
@@ -303,26 +304,26 @@ namespace EasyCS
             UpdateParent();
         }
 
-        public T GetActorComponent<T>() where T : ActorComponent
+        public T GetActorComponent<T>() where T : class, IActorComponent
         {
             Type type = typeof(T);
-            ActorComponent result = GetActorComponent(type);
+            IActorComponent result = GetActorComponent(type);
 
             return (T)result;
         }
 
-        public ActorComponent GetActorComponent(Type type)
+        public IActorComponent GetActorComponent(Type type)
         {
-            ActorComponent result = null;
+            IActorComponent result = null;
 
             _actorComponents.TryGetValue(type, out result);
 
             return result;
         }
 
-        public IReadOnlyList<ActorComponent> GetAllComponents() => _allComponents;
+        public IReadOnlyList<IActorComponent> GetAllComponents() => _allComponents.OfType<IActorComponent>().ToList();
 
-        private void RegisterActorComponent(ActorComponent component, bool addToAllList)
+        private void RegisterActorComponent(IActorComponent component, bool addToAllList)
         {
             Type type = component.GetType();
 
@@ -339,12 +340,12 @@ namespace EasyCS
             }
 
             if (addToAllList)
-                _allComponents.Add(component);
+                _allComponents.Add((MonoBehaviour)component);
 
             OnComponentAdded.Invoke(this, component);
         }
 
-        private void UnregisterActorComponent(ActorComponent component)
+        private void UnregisterActorComponent(IActorComponent component)
         {
             Type type = component.GetType();
 
@@ -356,7 +357,7 @@ namespace EasyCS
                 }
 
                 component.OnBeforeDestroy -= HandleComponentDestroyed;
-                _allComponents.Remove(component);
+                _allComponents.Remove((MonoBehaviour)component);
                 OnComponentRemoved(this, component);
             }
         }
@@ -365,7 +366,7 @@ namespace EasyCS
 
         public IEnumerable<IActorDataProvider> GetAllActorDataProviders()
         {
-            foreach (ActorComponent component in _allComponents)
+            foreach (var component in GetAllComponents())
                 if (component is IActorDataProvider actorDataProvider)
                     yield return actorDataProvider;
         }
@@ -384,9 +385,10 @@ namespace EasyCS
                 return default(T);
         }
 
-        private void HandleComponentDestroyed(EasyCSBehavior behavior)
+        private void HandleComponentDestroyed(IEasyCSBehavior behavior)
         {
-            UnregisterActorComponent((ActorComponent)behavior);
+            if (behavior is IActorComponent actorComponent)
+                UnregisterActorComponent(actorComponent);
         }
 
         protected override void HandleDestroy()
@@ -438,14 +440,20 @@ namespace EasyCS
         private void EditorAddAllMissingActorComponentsDependencies()
         {
             foreach (var component in _allComponents)
-                EditorAddMissingDependenciesForComponent(component, EditorDependenciesType.ActorComponent);
+            {
+                if (component is IActorComponent actorComponent)
+                    EditorAddMissingDependenciesForComponent(actorComponent, EditorDependenciesType.ActorComponent);
+            }
         }
 
         [Button("Add Missing Entity Components"), ShowIf("EditorHasMissingEntityComponentsDependencies"), ShowInEditMode]
         private void EditorAddAllMissingEntityComponentsDependencies()
         {
             foreach (var component in _allComponents)
-                EditorAddMissingDependenciesForComponent(component, EditorDependenciesType.Entity);
+            {
+                if (component is IActorComponent actorComponent)
+                    EditorAddMissingDependenciesForComponent(actorComponent, EditorDependenciesType.Entity);
+            }
         }
 
         [Button("Remove Unused Components"), GUIColor("yellow"), ShowIf("EditorHasUnusedDependencies"), ShowInEditMode]
@@ -481,7 +489,7 @@ namespace EasyCS
 
         private bool EditorShowKillEntityButton() => Entity.IsAlive && !_editorKillEntityConfirm;
 
-        public void EditorAddMissingDependenciesForComponent(ActorComponent component, EditorDependenciesType dependenciesType)
+        public void EditorAddMissingDependenciesForComponent(IActorComponent component, EditorDependenciesType dependenciesType)
         {
             List<Type> _missingList = EditorGetMissingDependenciesForComponent(component, dependenciesType, true);
 
@@ -513,7 +521,7 @@ namespace EasyCS
                         continue;
                     }
                 }
-                else if (typeof(ActorComponent).IsAssignableFrom(type))
+                else if (typeof(IActorComponent).IsAssignableFrom(type))
                 {
                     if (dependenciesType != EditorDependenciesType.All &&
                         dependenciesType != EditorDependenciesType.ActorComponent)
@@ -551,7 +559,7 @@ namespace EasyCS
         {
             base.OnValidate();
 
-            _allComponents = transform.GetComponentsInChildrenUntil<ActorComponent, Actor>();
+            _allComponents = transform.GetComponentsInChildrenUntil<MonoBehaviour, Actor>();
 
             // Sort for proper initialization
             _allComponents.Sort((a, b) =>
@@ -567,7 +575,10 @@ namespace EasyCS
             });
 
             foreach (var component in _allComponents)
-                component.SetActor(this);
+            {
+                if (component is IActorComponent actorComponent)
+                    actorComponent.SetActor(this);
+            }
 
             EditorValidateAllComponentDependencies();
             ValidateSetup();
@@ -586,6 +597,7 @@ namespace EasyCS
                 .Where(c =>
                 typeof(IEntityDataProvider).IsAssignableFrom(c.GetType()) ||
                 typeof(IActorDataProvider).IsAssignableFrom(c.GetType()))
+                .Cast<MonoBehaviour>()
                 .ToList();
         }
 
@@ -636,7 +648,6 @@ namespace EasyCS
             HashSet<Type> requiredTypesAll = new HashSet<Type>();
 
             bool componentsChanged = false;
-            bool missingListChanged = false;
 
             foreach (var component in _allComponents)
             {
@@ -665,7 +676,6 @@ namespace EasyCS
                             var instance = (IEntityComponent)Activator.CreateInstance(depType);
                             _entityComponentsMissing.Add(instance);
                             existingDataTypesAll.Add(depType);
-                            missingListChanged = true;
                             Debug.Log($"[EasyCS] Marked missing IEntityData: {depType.Name} for {component.GetType().Name}", gameObject);
                         }
                     }
@@ -704,13 +714,16 @@ namespace EasyCS
             List<Type> missingList = new List<Type>();
 
             foreach (var component in _allComponents)
-                missingList.AddRange(EditorGetMissingDependenciesForComponent(component, dependenciesType, false));
+            {
+                if (component is IActorComponent actorComponent)
+                    missingList.AddRange(EditorGetMissingDependenciesForComponent(actorComponent, dependenciesType, false));
+            }
 
             return missingList;
         }
 
         public List<string> EditorGetMissingDependenciesNamesForComponent(
-            ActorComponent component, EditorDependenciesType dependenciesType, bool ignoreRuntimeComponents)
+            IActorComponent component, EditorDependenciesType dependenciesType, bool ignoreRuntimeComponents)
         {
             return EditorGetMissingDependenciesForComponent(component, dependenciesType, ignoreRuntimeComponents)
                 .Select(t => t.FullName)
@@ -718,7 +731,7 @@ namespace EasyCS
         }
 
         public List<Type> EditorGetMissingDependenciesForComponent(
-            ActorComponent component, EditorDependenciesType dependenciesType, bool ignoreRuntimeComponents)
+            IActorComponent component, EditorDependenciesType dependenciesType, bool ignoreRuntimeComponents)
         {
             List<Type> missing = new();
             if (component == null)
@@ -740,7 +753,7 @@ namespace EasyCS
 
             foreach (var depType in requiredTypes)
             {
-                if (typeof(ActorComponent).IsAssignableFrom(depType))
+                if (typeof(IActorComponent).IsAssignableFrom(depType))
                 {
                     if (dependenciesType == EditorDependenciesType.All ||
                         dependenciesType == EditorDependenciesType.ActorComponent)
@@ -766,7 +779,7 @@ namespace EasyCS
             return missing;
         }
 
-        public List<ActorComponent> EditorGetUnusedActorComponentsAll()
+        public List<IActorComponent> EditorGetUnusedActorComponentsAll()
         {
             HashSet<Type> requiredTypes = new();
 
@@ -785,11 +798,11 @@ namespace EasyCS
                     requiredTypes.Add(dep);
             }
 
-            List<ActorComponent> unused = new();
+            List<IActorComponent> unused = new();
 
             foreach (var component in _allComponents)
             {
-                if (component == null) continue;
+                if (component == null || !(component is IActorComponent actorComponent)) continue;
 
                 var type = component.GetType();
                 Type exposedType = null;
@@ -802,15 +815,15 @@ namespace EasyCS
                 bool isUsed = requiredTypes.Contains(type) || (exposedType != null && requiredTypes.Contains(exposedType));
 
                 if (!isUsed)
-                    unused.Add(component);
+                    unused.Add(actorComponent);
             }
 
             return unused;
         }
 
-        public List<ActorComponent> EditorGetUnusedActorComponentsForComponent(ActorComponent component)
+        public List<IActorComponent> EditorGetUnusedActorComponentsForComponent(IActorComponent component)
         {
-            List<ActorComponent> unused = new();
+            List<IActorComponent> unused = new();
             if (component == null)
                 return unused;
 
@@ -818,7 +831,7 @@ namespace EasyCS
 
             foreach (var other in _allComponents)
             {
-                if (other == null || other == component)
+                if (other == null || other == component || !(other is IActorComponent otherActorComponent))
                     continue;
 
                 var type = other.GetType();
@@ -831,7 +844,7 @@ namespace EasyCS
                 bool requiredByProvided = exposedType != null && requiredTypes.Contains(exposedType);
 
                 if (!requiredByType && !requiredByProvided)
-                    unused.Add(other);
+                    unused.Add(otherActorComponent);
             }
 
             return unused;
@@ -839,7 +852,7 @@ namespace EasyCS
 
         public bool EditorHasUnusedDependencies() => _editorUnusedDependencies.Count > 0;
 
-        public List<ActorComponent> EditorGetAllComponentsSerialized() => _allComponents;
+        public List<MonoBehaviour> EditorGetAllComponentsSerialized() => _allComponents;
         public List<IEntityComponent> EditorGetEntityComponentsMissingSerialized() => _entityComponentsMissing;
 #endif
     }

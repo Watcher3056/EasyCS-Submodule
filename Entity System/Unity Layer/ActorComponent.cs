@@ -9,7 +9,7 @@ namespace EasyCS
 #if ODIN_INSPECTOR
     [Sirenix.OdinInspector.HideMonoScript]
 #endif
-    public abstract class ActorComponent : EasyCSBehavior, IEventListener<EventEntityKilled>
+    public abstract class ActorComponent : EasyCSBehavior, IActorComponent, IEventListener<EventEntityKilled>
     {
 #if ODIN_INSPECTOR
         [SerializeField, Sirenix.OdinInspector.ReadOnly, Sirenix.OdinInspector.Required, Sirenix.OdinInspector.ShowIf("EditorShowActor")]
@@ -87,7 +87,7 @@ namespace EasyCS
                 enabled = false;
         }
 
-        internal virtual void InternalHandleAttachToEntity(Entity curEntity)
+        public virtual void InternalHandleAttachToEntity(Entity curEntity)
         {
             EventSystem.TrySubscribe(this, curEntity);
 
@@ -105,7 +105,7 @@ namespace EasyCS
 
         }
 
-        internal virtual void InternalHandleDetachFromEntity(Entity prevEntity)
+        public virtual void InternalHandleDetachFromEntity(Entity prevEntity)
         {
             EventSystem.TryUnsubscribe(this, prevEntity);
 

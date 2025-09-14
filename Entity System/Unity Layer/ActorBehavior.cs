@@ -4,7 +4,7 @@ using UnityEngine;
 namespace EasyCS
 {
     [IconClass(ConstantsIcons.IconActor)]
-    public abstract class ActorBehavior : ActorComponent
+    public abstract class ActorBehavior : ActorComponent, IActorBehavior
     {
         //protected override void OnGUI()
         //{

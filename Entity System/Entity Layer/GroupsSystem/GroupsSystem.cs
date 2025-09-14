@@ -10,7 +10,7 @@ namespace EasyCS.Groups
         private Group<Actor> _groupActors;
         private Dictionary<Type, Group<Actor>> _groupsByActorType;
         private Dictionary<Type, Group<IEntityComponent>> _groupsByEntityComponentType;
-        private Dictionary<Type, Group<ActorComponent>> _groupsByActorComponentType;
+        private Dictionary<Type, Group<IActorComponent>> _groupsByActorComponentType;
         private Dictionary<CustomGroupBuilder, CustomGroup> _customGroups;
         private EntityContainer _entityContainer;
 
@@ -25,7 +25,7 @@ namespace EasyCS.Groups
             _groupActors = new Group<Actor>();
             _groupsByActorType = new Dictionary<Type, Group<Actor>>();
             _groupsByEntityComponentType = new Dictionary<Type, Group<IEntityComponent>>();
-            _groupsByActorComponentType = new Dictionary<Type, Group<ActorComponent>>();
+            _groupsByActorComponentType = new Dictionary<Type, Group<IActorComponent>>();
             _customGroups = new Dictionary<CustomGroupBuilder, CustomGroup>();
 
             foreach (Actor actor in _entityContainer.ActorsAll)
@@ -130,7 +130,7 @@ namespace EasyCS.Groups
             actor.OnComponentRemoved -= HandleActorComponentRemoved;
         }
 
-        private void HandleActorComponentRemoved(Actor actor, ActorComponent component)
+        private void HandleActorComponentRemoved(Actor actor, IActorComponent component)
         {
             Type componentType = component.GetType();
             var group = GetGroupWithActorComponent(componentType);
@@ -138,7 +138,7 @@ namespace EasyCS.Groups
             ScoreEntityInCustomGroupsByGroup(actor.Entity, group, -1);
         }
 
-        private void HandleActorComponentAdded(Actor actor, ActorComponent component)
+        private void HandleActorComponentAdded(Actor actor, IActorComponent component)
         {
             Type componentType = component.GetType();
             var group = GetGroupWithActorComponent(componentType);
@@ -172,11 +172,11 @@ namespace EasyCS.Groups
                 ? _groupActors
                 : GetOrCreateGroup(type, _groupsByActorType, () => new Group<Actor>());
 
-        public Group<ActorComponent> GetGroupWithActorComponent<T>() where T : ActorComponent
+        public Group<IActorComponent> GetGroupWithActorComponent<T>() where T : IActorComponent
             => GetGroupWithActorComponent(typeof(T));
 
-        public Group<ActorComponent> GetGroupWithActorComponent(Type type)
-            => GetOrCreateGroup(type, _groupsByActorComponentType, () => new Group<ActorComponent>());
+        public Group<IActorComponent> GetGroupWithActorComponent(Type type)
+            => GetOrCreateGroup(type, _groupsByActorComponentType, () => new Group<IActorComponent>());
 
         private Group<T> GetOrCreateGroup<T>(
             Type type,

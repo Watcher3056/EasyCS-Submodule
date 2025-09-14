@@ -550,10 +550,10 @@ namespace EasyCS.Editor
 
             // Discover user-defined ActorData and ActorBehavior types
             // Importantly, this will now only find the *original* user-defined types, not the generated partials.
-            var actorDataPlainTypes = GetAllTypesDerivedFrom(typeof(ActorData), assembliesToScan)
+            var actorDataPlainTypes = GetAllTypesDerivedFrom(typeof(IActorData), assembliesToScan)
                                         .Where(t => !t.IsSubclassOf(typeof(ActorDataSharedBase)))
                                         .ToList();
-            var actorBehaviorPlainTypes = GetAllTypesDerivedFrom(typeof(ActorBehavior), assembliesToScan).ToList();
+            var actorBehaviorPlainTypes = GetAllTypesDerivedFrom(typeof(IActorBehavior), assembliesToScan).ToList();
 
             // Store original assembly names for .asmref generation
             var originalAssemblyNames = new HashSet<string>();
@@ -1190,8 +1190,8 @@ public partial class {1} {{ }}";
             userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(IEntityData), AppDomain.CurrentDomain.GetAssemblies()));
             userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(IEntityBehavior), AppDomain.CurrentDomain.GetAssemblies()));
             userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(ActorDataSharedBase), AppDomain.CurrentDomain.GetAssemblies()));
-            userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(ActorData), AppDomain.CurrentDomain.GetAssemblies()));
-            userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(ActorBehavior), AppDomain.CurrentDomain.GetAssemblies()));
+            userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(IActorData), AppDomain.CurrentDomain.GetAssemblies()));
+            userDefinedTypes.AddRange(GetAllTypesDerivedFrom(typeof(IActorBehavior), AppDomain.CurrentDomain.GetAssemblies()));
 
 
             foreach (var type in userDefinedTypes)

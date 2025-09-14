@@ -36,8 +36,8 @@ namespace EasyCS
             if (comp is IEntityDataProvider) return 2;
             if (comp is IActorData) return 3;
             if (comp is IEntityBehaviorProvider) return 4;
-            if (comp is ActorComponent) return 5;
-            if (comp is EasyCSBehavior) return 6;
+            if (comp is IActorComponent) return 5;
+            if (comp is IEasyCSBehavior) return 6;
 
             return 7; // fallback: other IHasContainer implementors
         }
